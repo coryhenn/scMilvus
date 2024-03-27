@@ -15,12 +15,15 @@ client = MilvusClient(
     token=TOKEN
 )
 
+
 # 2. Create a collection in quick setup mode
 client.create_collection(
     collection_name="quick_setup",
     dimension=5
 )
 
+
+# 4. Insert data into the collection
 # 4.1. Prepare data
 data = [
     {"id": 0, "vector": [0.3580376395471989, -0.6023495712049978, 0.18414012509913835, -
@@ -53,6 +56,27 @@ res = client.insert(
 
 print(res)
 
+# 5. Insert more data into the collection
+# 5.1. Prepare data
+
+colors = ["green", "blue", "yellow", "red", "black",
+          "white", "purple", "pink", "orange", "brown", "grey"]
+data = [{
+    "id": i,
+    "vector": [random.uniform(-1, 1) for _ in range(5)],
+    "color": f"{random.choice(colors)}_{str(random.randint(1000, 9999))}"
+} for i in range(1000)]
+
+# 5.2. Insert data
+res = client.insert(
+    collection_name="quick_setup",
+    data=data[10:]
+)
+
+print(res)
+
+
+# 6. Search with a single vector
 # 6.1. Prepare query vectors
 query_vectors = [
     [0.041732933, 0.013779674, -0.027564144, -0.013061441, 0.009748648]
