@@ -1,6 +1,8 @@
 import os
+import random
+import numpy as np
 
-from pymilvus import MilvusClient
+from pymilvus import MilvusClient, DataType
 
 CLUSTER_ENDPOINT = "https://in03-d3226d3522b7074.api.gcp-us-west1.zillizcloud.com"
 TOKEN = os.getenv('Zilliz_API_Key')
