@@ -5,7 +5,8 @@ import numpy as np
 from pymilvus import MilvusClient, DataType
 
 CLUSTER_ENDPOINT = "https://in03-d3226d3522b7074.api.gcp-us-west1.zillizcloud.com"
-TOKEN = os.getenv('Zilliz_API_Key')
+TOKEN = os.getenv(
+    'd86da1c7f157545858078bcf3e9f07b2f2c0a7b2136f9c663e977b9ec903f61c8ab61f92f97afcb1d92d80a48d1bcd542cab1abd')
 
 if TOKEN is None:
     print("No API key found")

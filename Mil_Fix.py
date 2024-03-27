@@ -17,3 +17,6 @@ collections = client.list_collections()
 print("Collections in the database:")
 for collection in collections:
     print(collection)  # Print the collection object itself
+
+# Drop the collection
+# client.drop_collection("PoolAscRNAseq")

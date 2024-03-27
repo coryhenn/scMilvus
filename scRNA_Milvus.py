@@ -10,13 +10,14 @@ client = MilvusClient(
 )
 
 # 2. Create a collection in quick setup mode
-client.create_collection(
-    collection_name="quick_setup",
-    dimension=5
-)
+# client.create_collection(
+
+# collection_name="quick_setup",
+# dimension=5
+# )
 
 # 4.1. Prepare data
-data = [
+"""data = [
     {"id": 0, "vector": [0.3580376395471989, -0.6023495712049978, 0.18414012509913835, -
                          0.26286205330961354, 0.9029438446296592], "color": "pink_8682"},
     {"id": 1, "vector": [0.19886812562848388, 0.06023560599112088, 0.6976963061752597,
@@ -37,15 +38,15 @@ data = [
                          0.8650502298996872, -0.6140360785406336], "color": "white_9381"},
     {"id": 9, "vector": [0.5718280481994695, 0.24070317428066512, -0.3737913482606834, -
                          0.06726932177492717, -0.6980531615588608], "color": "purple_4976"}
-]
+]"""
 
 # 4.2. Insert data
-res = client.insert(
+"""res = client.insert(
     collection_name="quick_setup",
     data=data
-)
+)"""
 
-print(res)
+# print(res)
 
 # 6.1. Prepare query vectors
 query_vectors = [
