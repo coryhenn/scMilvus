@@ -1,3 +1,5 @@
+import os
+
 from pymilvus import MilvusClient
 import numpy as np
 import pandas as pd
@@ -9,10 +11,11 @@ CLUSTER_ENDPOINT = "http://localhost:19530"
 TOKEN = "YOUR_CLUSTER_TOKEN"
 
 # Set up a Milvus client
-client = MilvusClient(uri=CLUSTER_ENDPOINT, token=TOKEN)
+# client = MilvusClient(uri=CLUSTER_ENDPOINT, token=TOKEN)
 
 # Read data from CSV file
-data = pd.read_csv('output_matrix.csv', delimiter=',')
+path = os.path.join('data', 'output_matrix.csv')
+data = pd.read_csv(path, delimiter=',')
 
 print(data.head)
 
@@ -30,6 +33,8 @@ pca_data = pca.fit_transform(sc_data)
 
 # Extract gene expression values
 gene_values = pca_data[:, :].tolist()
+print(gene_values[0])
+exit(0)
 
 # Define the id value
 id_value = 0
