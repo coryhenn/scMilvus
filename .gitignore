@@ -4,3 +4,6 @@
 
 # Ignore data
 data
+
+# Ignore Jason scratchwork
+tests.py
