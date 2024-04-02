@@ -24,8 +24,10 @@ data_values = data.iloc[:, 1:].values
 sc = StandardScaler()
 sc_data = sc.fit_transform(data_values)
 
-pca = PCA(n_components=0.85)
+pca = PCA(n_components=0.90)  # n_components=0.90
 pca_data = pca.fit_transform(sc_data)
+
+print(pca_data.shape)
 
 
 # Exclude the first column (cell identifiers)
