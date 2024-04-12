@@ -7,30 +7,15 @@ import re
 
 import numpy as np
 import pandas as pd
-from pymilvus import MilvusClient
+from pymilvus import MilvusClient, DataType
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from global_variables import TOKEN, CLUSTER_ENDPOINT
 
-# Todo: Cory
-def find_similarities(collection_name, root_vector_id, top_n):
-    """
-    This function will query the Milvus database for vectors that have the highest
-        cosine similarity to the root vector.
-
-    :param: collection_name: The name of the collection to query.
-    :param root_vector_id: The vector to find similarities to.
-    :param top_n: The number of similar vectors to find
-    :return: A dictionary with keys [filenames, results], where results is a
-        list of (vector_id, cell_name, filename, cosine_similarity_value) tuples
-        ordered by most to least similar. And filenames is a list of the
-        files the vectors originated from.
-    """
-    pass
-
-
 # Todo: Jason
+
+
 def insert_data(collection_name, filename):
     """
     This function will read a cell/gene matrix and perform the following:
@@ -79,7 +64,6 @@ def insert_data(collection_name, filename):
     # Extract gene expression values
     gene_values = pca_data[:, :].tolist()
 
-
     # Prepare data
     data = []
     for i, vals in enumerate(gene_values):
@@ -118,6 +102,7 @@ def insert_data(collection_name, filename):
     )
 
     print(res)
+
 # exit(0)
 #
 # # Define the id value
@@ -139,3 +124,57 @@ def insert_data(collection_name, filename):
 # # dimension=32286
 # # )
 
+# Todo: Cory
+
+
+def find_similarities(collection_name, root_vector_id, limit, query_vectors):
+    """
+    This function will query the Milvus database for vectors that have the highest
+        cosine similarity to the root vector.
+
+    :param: collection_name: The name of the collection to query.
+    :param root_vector_id: The vector or list of vectors to find similarities to.
+    :param limit: The number of similar vectors to find
+    :return: A dictionary with keys [filenames, results], where results is a
+        list of (vector_id, cell_name, filename, cosine_similarity_value) tuples
+        ordered by most to least similar. And filenames is a list of the
+        files the vectors originated from.
+    """
+
+    # Ensure that root_vector_id is always a list
+    if not isinstance(root_vector_id, list):
+        root_vector_id = [root_vector_id]
+
+    # Prepare query vectors
+    query_vectors = root_vector_id
+
+    # Start search
+    res = client.search(
+        collection_name="quick_setup",     # target collection
+        data=query_vectors,                # query vectors
+        limit=5,                           # number of returned entities
+    )
+
+    # Process search results
+    results = []
+
+    for entity in res:
+        vector_id = entity[0]  # Accessing the first element of the list
+        cosine_similarity_value = entity[1]
+
+        # Accessing the cell_name and file_name from the Milvus vector
+        cell_name = entity['cell_name']
+        file_name = entity['file_name']
+
+        # Append the tuple (vector_id, cell_name, file_name, cosine_similarity_value) to the results list
+        results.append(
+            (vector_id, cell_name, file_name, cosine_similarity_value))
+
+    # Sort results by cosine similarity value (descending order)
+    results.sort(key=lambda x: x[3], reverse=True)
+
+    # Create a dictionary with keys "file_name" and "results"
+    output = {"file_name": file_name, "results": results}
+
+    # Print the dictionary
+    print(output)

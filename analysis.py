@@ -24,4 +24,5 @@ def get_similiar_genes(similarity_dict, top_n):
     :param similarity_dict: A similarity dictionary from the find_similarities function
     :return: See 2.
     """
+
     pass
