@@ -145,18 +145,25 @@ def find_similarities(collection_name, root_vector_id, limit, query_vectors):
     if not isinstance(root_vector_id, list):
         root_vector_id = [root_vector_id]
 
+    print(f'** Finding similarities function **')
+
+    # Set up a Milvus client
+    print(f'Connecting to Milvus...')
+    client = MilvusClient(uri=CLUSTER_ENDPOINT, token=TOKEN)
+
     # Prepare query vectors
     query_vectors = root_vector_id
 
     # Start search
     res = client.search(
-        collection_name="quick_setup",     # target collection
+        collection_name="Cell_PCA",        # target collection
         data=query_vectors,                # query vectors
         limit=5,                           # number of returned entities
     )
 
     # Process search results
     results = []
+    origin_files = set()
 
     for entity in res:
         vector_id = entity[0]  # Accessing the first element of the list
@@ -169,12 +176,13 @@ def find_similarities(collection_name, root_vector_id, limit, query_vectors):
         # Append the tuple (vector_id, cell_name, file_name, cosine_similarity_value) to the results list
         results.append(
             (vector_id, cell_name, file_name, cosine_similarity_value))
+        origin_files.add(file_name)
 
     # Sort results by cosine similarity value (descending order)
     results.sort(key=lambda x: x[3], reverse=True)
 
     # Create a dictionary with keys "file_name" and "results"
-    output = {"file_name": file_name, "results": results}
+    output = {"filenames": origin_files, "results": results}
 
     # Print the dictionary
     print(output)
