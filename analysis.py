@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from global_variables import TOKEN, CLUSTER_ENDPOINT
 
 
-# Todo: Cory
+# Todo: Jason: Implement this
 def get_similiar_genes(similarity_dict, top_n):
     """
     This function will:
@@ -23,6 +23,15 @@ def get_similiar_genes(similarity_dict, top_n):
             most to least expressed.
     :param similarity_dict: A similarity dictionary from the find_similarities function
     :return: See 2.
+    """
+
+    pass
+
+def plot_umap(gene_map):
+    """
+    Make a umap plot. Save plot to figures/
+    :param gene_map:
+    :return:
     """
 
     pass
