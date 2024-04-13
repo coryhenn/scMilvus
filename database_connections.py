@@ -107,29 +107,8 @@ def insert_data(collection_name, filename):
     print(res)
 
 
-# exit(0)
-#
-# # Define the id value
-# id_value = 0
-#
-# # Construct the desired format as a dictionary
-# result = {
-#     "id": id_value,
-#     "vector": gene_values
-# }
-#
-# # Print the result
-# print(result)
-#
-# # 2. Create a collection in quick setup mode
-# # client.create_collection(
-#
-# # collection_name="Exp1scRNAseq",
-# # dimension=32286
-# # )
-
 # Todo: Jason: Figure out a way to get the vector info. Seperate query?
-def find_similarities(collection_name, root_vector_ids, limit):
+def find_similarities(collection_name, root_vector_ids, limit=10):
     """
     This function will query the Milvus database for vectors that have the highest
         cosine similarity to the root vector.
@@ -137,10 +116,11 @@ def find_similarities(collection_name, root_vector_ids, limit):
     :param: collection_name: The name of the collection to query.
     :param root_vector_ids: The vector or list of vectors to find similarities to.
     :param limit: The number of similar vectors to find
-    :return: A dictionary with keys [query_vector_id], where query_vector_id points to a
-        list of (vector_id, cell_name, filename, cosine_similarity_value) tuples
-        ordered by most to least similar. And filenames is a list of the
-        files the vectors originated from.
+    :return: A tuple where the first element is:
+                A dictionary with keys [query_vector_id], where query_vector_id points to a
+                list of (vector_id, cosine_similarity_value, filename) tuples
+                ordered by most to least similar.
+            And the second element is a list of file names the vectors originate from
     """
 
     # Ensure that root_vector_id is always a list
@@ -156,6 +136,7 @@ def find_similarities(collection_name, root_vector_ids, limit):
 
     # Get the root vectors from Milvus
     root_vector_ids.sort()
+    print(f'Retrieving vectors...')
     res = client.get(collection_name=collection_name, ids=root_vector_ids)
     res.sort(key=lambda x: x['primary_key'], reverse=False)
 
@@ -165,27 +146,33 @@ def find_similarities(collection_name, root_vector_ids, limit):
         query_vectors.append(item['vector'])
 
     # Perform search
+    print(f'Performing cosine similarity query...')
     res = client.search(
         collection_name=collection_name,  # target collection
         data=query_vectors,  # query vectors
         limit=limit,  # number of returned entities
+        output_fields=['file_name']
     )
 
     # Process results
+    print(f'Processing results...')
     output = {}
+    filenames = set()
     for query in res:
         results = []
         for match in query:
+            print(match)
             vector_id = match['id']  # Accessing the first element of the list
             cosine_similarity_value = match['distance']
+            file_name = match['entity']['file_name']
+            filenames.add(file_name)
 
             # Append the tuple (vector_id, cell_name, file_name, cosine_similarity_value) to the results list
-            results.append((vector_id, cosine_similarity_value))
+            results.append((vector_id, cosine_similarity_value, file_name))
 
         # Sort results by cosine similarity value (descending order)
         results.sort(key=lambda x: x[1], reverse=True)
 
         output[query[0]['id']] = results
 
-    # Print the dictionary
-    print(output)
+    return output, filenames

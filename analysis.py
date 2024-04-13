@@ -11,7 +11,7 @@ from global_variables import TOKEN, CLUSTER_ENDPOINT
 
 
 # Todo: Jason: Implement this
-def get_similiar_genes(similarity_dict, top_n):
+def get_similar_genes(similarity_obj, top_n=5):
     """
     This function will:
         1. Find the original gene data for each cell in the top-n
@@ -21,11 +21,34 @@ def get_similiar_genes(similarity_dict, top_n):
             where cell_id and cell_name are from the vectors in Milvus and
             top_genes is a list of the top_n genes expressed in each cell, ordered
             most to least expressed.
-    :param similarity_dict: A similarity dictionary from the find_similarities function
+    :param top_n: Top genes to return
+    :param similarity_obj: A similarity dictionary from the find_similarities function
     :return: See 2.
     """
+    print(f'** get_similar_genes function **')
 
-    pass
+    # Assume one experiment (file) only for now
+    if len(similarity_obj[1]) != 1:
+        print(f'Error: Only one experiment currently supported.')
+
+    raw_data = None
+    filepath = None
+    for file in similarity_obj[1]:
+        filepath = os.path.join('data', file)
+
+    if filepath is None:
+        print(f'Error: Filepath {filepath} is not valid')
+        return
+
+    raw_data = pd.read_csv(filepath, delimiter=',')
+
+    if raw_data is None:
+        print(f'Error: Could not read file: {filepath}')
+
+
+    print(raw_data.head(5))
+
+
 
 def plot_umap(gene_map):
     """
