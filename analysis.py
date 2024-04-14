@@ -27,26 +27,36 @@ def get_similar_genes(similarity_obj, top_n=5):
     """
     print(f'** get_similar_genes function **')
 
-    # Assume one experiment (file) only for now
-    if len(similarity_obj[1]) != 1:
-        print(f'Error: Only one experiment currently supported.')
+    # data = pd.read_csv('data/ex_1_pool_a.csv', delimiter=',', nrows=5, skiprows=2, header=None)
+    #
+    # print(data)
 
-    raw_data = None
-    filepath = None
+
+    # Get original gene data
+    cell_genes = {}
     for file in similarity_obj[1]:
         filepath = os.path.join('data', file)
+        cell_genes[file] = pd.read_csv(filepath, delimiter=',', nrows=0)
+    for query_vec in similarity_obj[0].keys():
+        for match in similarity_obj[0][query_vec]:
+            print(f'file: {match}')
+            cell_id = match[0] - 100000
 
-    if filepath is None:
-        print(f'Error: Filepath {filepath} is not valid')
-        return
+            filepath = os.path.join('data', match[2])
 
-    raw_data = pd.read_csv(filepath, delimiter=',')
-
-    if raw_data is None:
-        print(f'Error: Could not read file: {filepath}')
+            data = pd.read_csv(filepath, delimiter=',', nrows=1, skiprows=cell_id+1, header=None)
+            data_list = data.loc[:, :].values.flatten().tolist()
+            cell_genes[match[2]].loc[len(cell_genes[match[2]])] = data_list
 
 
-    print(raw_data.head(5))
+    # Find the top_n similar genes for each query_vector
+    index = 0
+    offset = len(similarity_obj[0].keys())
+    for query_vec in similarity_obj[0].keys():
+        match_df =
+
+
+    print(f'cell_genes: {cell_genes}')
 
 
 

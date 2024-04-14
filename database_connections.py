@@ -161,7 +161,6 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
     for query in res:
         results = []
         for match in query:
-            print(match)
             vector_id = match['id']  # Accessing the first element of the list
             cosine_similarity_value = match['distance']
             file_name = match['entity']['file_name']
