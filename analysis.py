@@ -11,7 +11,7 @@ from global_variables import TOKEN, CLUSTER_ENDPOINT
 
 
 # Todo: Jason: Implement this
-def get_similar_genes(similarity_obj, top_n=5):
+def get_similar_genes(similarity_obj, top_n=10):
     """
     This function will:
         1. Find the original gene data for each cell in the top-n
@@ -49,14 +49,23 @@ def get_similar_genes(similarity_obj, top_n=5):
             cell_genes[match[2]].loc[len(cell_genes[match[2]])] = data_list
 
 
-    # Find the top_n similar genes for each query_vector
-    index = 0
-    offset = len(similarity_obj[0].keys())
-    for query_vec in similarity_obj[0].keys():
-        match_df =
+    # Find the top_n most expressed genes
+    # Code from: https://stackoverflow.com/questions/34518634/finding-highest-values-in-each-row-in-a-data-frame-for-python
+    # expressed_genes = pd.DataFrame({n: df.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(df.T)}).T
+    # index = 0
+    # offset = len(similarity_obj[0].keys())
+    top_n_cell_genes = {}
+    for file in cell_genes.keys():
+        data = cell_genes[file]
+        data = data.drop(columns=['Unnamed: 0'], axis=1)
+        expressed_genes = pd.DataFrame({n: data.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(data.T)}).T
+        top_n_cell_genes[file] = expressed_genes
 
 
-    print(f'cell_genes: {cell_genes}')
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', 300)
+    #print(f'cell_genes: {cell_genes}')
+    print(f'expressed genes: {top_n_cell_genes}')
 
 
 
