@@ -57,10 +57,23 @@ def get_similar_genes(similarity_obj, top_n=10):
     top_n_cell_genes = {}
     for file in cell_genes.keys():
         data = cell_genes[file]
+        cell_ids = data[['Unnamed: 0']].copy()
+        cell_ids.rename(columns={'Unnamed: 0': -1}, inplace=True)
         data = data.drop(columns=['Unnamed: 0'], axis=1)
         expressed_genes = pd.DataFrame({n: data.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(data.T)}).T
+
+        # Join back in cell_ids
+        expressed_genes = expressed_genes.join(cell_ids)
+
+        # Put cell_id column first
+        expressed_genes = expressed_genes.reindex(columns=sorted(expressed_genes.columns))
+        expressed_genes.rename(columns={-1: 'cell_ids'}, inplace=True)
         top_n_cell_genes[file] = expressed_genes
 
+
+
+    save_path = os.path.join('data', 'ex_1_top10_to_id_100000.csv')
+    top_n_cell_genes['ex_1_pool_a.csv'].to_csv(save_path, index=False)
 
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 300)
