@@ -70,18 +70,19 @@ def insert_data(collection_name, filename):
     # Prepare data
     data = []
     max_vec_length = 5880
-    for i, vals in enumerate(gene_values):
+    chunk_size = 1000
 
-        # Insert data in chunks of 1000 to avoid sending too much data at once and Milvus rejecting it
-        counter = 1000
-        if i < counter:
-            num_vals = len(vals)
+    i = 0
+    counter = chunk_size
+    while i < len(gene_values):
+        while i < counter and i < len(gene_values):
+            num_vals = len(gene_values[i])
             if num_vals < max_vec_length:
                 to_add = max_vec_length - num_vals
                 for _ in range(to_add):
-                    vals.append(0.0)
+                    gene_values[i].append(0.0)
 
-            elif len(vals) > 1000:
+            elif len(gene_values[i]) > max_vec_length:
                 print(f'Vector size of {num_vals} > {max_vec_length}. Cannot upload to Milvus')
 
             # Create primary key
@@ -96,20 +97,21 @@ def insert_data(collection_name, filename):
 
             row_data = {
                 'primary_key': primary_key,
-                'vector': vals,
+                'vector': gene_values[i],
                 'cell_name': 'na',
                 'file_name': filename
             }
 
             data.append(row_data)
+            i += 1
 
-        print(f'Sending rows {counter - 1000} to {counter} to Milvus...')
+        print(f'Sending rows {counter-chunk_size} to {i} to Milvus (of {len(gene_values)})...')
         res = client.insert(
             collection_name=collection_name,
             data=data
         )
-
-    print(res)
+        print(res)
+        counter += chunk_size
 
 
 def find_similarities(collection_name, root_vector_ids, limit=10):

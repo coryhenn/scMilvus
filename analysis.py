@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-import scanpy as sc
+# import scanpy as sc
 from matplotlib.pyplot import rc_context
 
 
