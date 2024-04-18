@@ -85,7 +85,7 @@ def insert_data(collection_name, filename):
                 print(f'Vector size of {num_vals} > {max_vec_length}. Cannot upload to Milvus')
 
             # Create primary key
-            primary_key = 100000
+            primary_key = int(f'{experiment_num}00000')
             if i > 0:
                 num_digits = math.floor(np.log10(i)) + 1
                 primary_key = f'{experiment_num}'
