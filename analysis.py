@@ -1,13 +1,8 @@
 import os
 
-from pymilvus import MilvusClient
-import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-
-from global_variables import TOKEN, CLUSTER_ENDPOINT
+import scanpy as sc
+from matplotlib.pyplot import rc_context
 
 
 # Todo: Jason: Implement this
@@ -72,8 +67,10 @@ def get_similar_genes(similarity_obj, top_n=10):
 
 
 
-    save_path = os.path.join('data', 'ex_1_top10_to_id_100000.csv')
-    top_n_cell_genes['ex_1_pool_a.csv'].to_csv(save_path, index=False)
+
+    for file in top_n_cell_genes.keys():
+        save_path = os.path.join('data', f'{file}_top{top_n}_to_id_100000.csv')
+        top_n_cell_genes[file].to_csv(save_path, index=False)
 
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 300)
@@ -88,5 +85,8 @@ def plot_umap(gene_map):
     :param gene_map:
     :return:
     """
+
+    # https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.umap.html
+    # https://scanpy.readthedocs.io/en/stable/tutorials/plotting/core.html
 
     pass

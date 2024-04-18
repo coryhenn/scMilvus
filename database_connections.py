@@ -69,45 +69,49 @@ def insert_data(collection_name, filename):
 
     # Prepare data
     data = []
+    max_vec_length = 5880
     for i, vals in enumerate(gene_values):
-        num_vals = len(vals)
-        if num_vals < 1000:
-            to_add = 1000 - num_vals
-            for _ in range(to_add):
-                vals.append(0.0)
 
-        elif len(vals) > 1000:
-            print(f'Vector size of {num_vals} > 1000. Cannot upload to Milvus')
+        # Insert data in chunks of 1000 to avoid sending too much data at once and Milvus rejecting it
+        counter = 1000
+        if i < counter:
+            num_vals = len(vals)
+            if num_vals < max_vec_length:
+                to_add = max_vec_length - num_vals
+                for _ in range(to_add):
+                    vals.append(0.0)
 
-        # Create primary key
-        primary_key = 100000
-        if i > 0:
-            num_digits = math.floor(np.log10(i)) + 1
-            primary_key = f'{experiment_num}'
-            for _ in range(5 - num_digits):
-                primary_key += '0'
-            primary_key += f'{i}'
-            primary_key = int(primary_key)
+            elif len(vals) > 1000:
+                print(f'Vector size of {num_vals} > {max_vec_length}. Cannot upload to Milvus')
 
-        row_data = {
-            'primary_key': primary_key,
-            'vector': vals,
-            'cell_name': 'na',
-            'file_name': filename
-        }
+            # Create primary key
+            primary_key = 100000
+            if i > 0:
+                num_digits = math.floor(np.log10(i)) + 1
+                primary_key = f'{experiment_num}'
+                for _ in range(5 - num_digits):
+                    primary_key += '0'
+                primary_key += f'{i}'
+                primary_key = int(primary_key)
 
-        data.append(row_data)
+            row_data = {
+                'primary_key': primary_key,
+                'vector': vals,
+                'cell_name': 'na',
+                'file_name': filename
+            }
 
-    print('Sending data to Milvus...')
-    res = client.insert(
-        collection_name=collection_name,
-        data=data
-    )
+            data.append(row_data)
+
+        print(f'Sending rows {counter - 1000} to {counter} to Milvus...')
+        res = client.insert(
+            collection_name=collection_name,
+            data=data
+        )
 
     print(res)
 
 
-# Todo: Jason: Figure out a way to get the vector info. Seperate query?
 def find_similarities(collection_name, root_vector_ids, limit=10):
     """
     This function will query the Milvus database for vectors that have the highest
