@@ -50,6 +50,7 @@ def insert_data(collection_name, filename):
     path = os.path.join('data', filename)
     data = pd.read_csv(path, delimiter=',')
     data_values = data.iloc[:, 1:].values
+    data_ids = data.iloc[:, :1].values
 
     print(f'Data already normalized from R...')
     # sc = StandardScaler()
@@ -86,17 +87,17 @@ def insert_data(collection_name, filename):
                 print(f'Vector size of {num_vals} > {max_vec_length}. Cannot upload to Milvus')
 
             # Create primary key
-            primary_key = int(f'{experiment_num}00000')
-            if i > 0:
-                num_digits = math.floor(np.log10(i)) + 1
-                primary_key = f'{experiment_num}'
-                for _ in range(5 - num_digits):
-                    primary_key += '0'
-                primary_key += f'{i}'
-                primary_key = int(primary_key)
+            # primary_key = int(f'{experiment_num}00000')
+            # if i > 0:
+            #     num_digits = math.floor(np.log10(i)) + 1
+            #     primary_key = f'{experiment_num}'
+            #     for _ in range(5 - num_digits):
+            #         primary_key += '0'
+            #     primary_key += f'{i}'
+            #     primary_key = int(primary_key)
 
             row_data = {
-                'primary_key': primary_key,
+                'primary_key': data_ids[i][0],
                 'vector': gene_values[i],
                 'cell_name': 'na',
                 'file_name': filename
