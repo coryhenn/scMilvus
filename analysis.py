@@ -33,8 +33,9 @@ def get_similar_genes(similarity_obj, top_n=10):
         filepath = os.path.join('data', file)
         cell_genes[file] = pd.read_csv(filepath, delimiter=',', nrows=0)
     for query_vec in similarity_obj[0].keys():
+        counter = 0
         for match in similarity_obj[0][query_vec]:
-            print(f'file: {match}')
+            print(f'file {counter}: {match}')
             cell_id = match[0] - 200000
 
             filepath = os.path.join('data', match[2])
@@ -42,6 +43,7 @@ def get_similar_genes(similarity_obj, top_n=10):
             data = pd.read_csv(filepath, delimiter=',', nrows=1, skiprows=cell_id-724, header=None)
             data_list = data.loc[:, :].values.flatten().tolist()
             cell_genes[match[2]].loc[len(cell_genes[match[2]])] = data_list
+            counter += 1
 
 
     # Find the top_n most expressed genes
@@ -53,9 +55,11 @@ def get_similar_genes(similarity_obj, top_n=10):
     for file in cell_genes.keys():
         data = cell_genes[file]
         cell_ids = data[['Unnamed: 0']].copy()
-        print(f'cell-ds: {cell_ids}')
+        save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825_CELL_IDS.csv')
+        cell_ids.to_csv(save_path, index=False)
         cell_ids.rename(columns={'Unnamed: 0': -1}, inplace=True)
         data = data.drop(columns=['Unnamed: 0'], axis=1)
+        print(f'data: {data}')
         expressed_genes = pd.DataFrame({n: data.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(data.T)}).T
 
         # Join back in cell_ids
@@ -70,7 +74,7 @@ def get_similar_genes(similarity_obj, top_n=10):
 
 
     for file in top_n_cell_genes.keys():
-        save_path = os.path.join('data', f'{file}_top{top_n}_to_id_100000.csv')
+        save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825.csv')
         top_n_cell_genes[file].to_csv(save_path, index=False)
 
     pd.set_option('display.max_columns', None)
