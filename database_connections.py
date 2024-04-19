@@ -68,13 +68,13 @@ def insert_data(collection_name, filename):
     gene_values = pca_data[:, :].tolist()
 
     # Prepare data
-    data = []
     max_vec_length = 5880
     chunk_size = 1000
 
     i = 0
     counter = chunk_size
     while i < len(gene_values):
+        data = []
         while i < counter and i < len(gene_values):
             num_vals = len(gene_values[i])
             if num_vals < max_vec_length:
