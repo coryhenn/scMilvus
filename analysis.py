@@ -5,21 +5,21 @@ import pandas as pd
 # import scanpy as sc
 from matplotlib.pyplot import rc_context
 
-def get_similar_cell_ids(similarity_obj, file, top_n=10):
+def get_similar_cell_ids(similarity_obj):
 
-    cell_ids = pd.DataFrame(columns=['Cell_id'])
-
-    for query_vec in similarity_obj[0].keys():
-        for match in similarity_obj[0][query_vec]:
+    for query_vec in similarity_obj.keys():
+        print(query_vec)
+        cell_ids = pd.DataFrame(columns=[f'Cell_ids_query_{query_vec}'])
+        for match in similarity_obj[query_vec]:
 
             cell_id = match[0]
             cell_ids.loc[len(cell_ids)] = cell_id
 
-    save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825_CELL_IDS.csv')
-    cell_ids.to_csv(save_path, index=False)
+        save_path = os.path.join('data', f'ex_2_Pool_B_query{query_vec}.csv')
+        cell_ids.to_csv(save_path, index=False)
 
 
-def get_similar_genes(similarity_obj, file, top_n=10):
+def get_similar_genes(similarity_obj, file, top_n=327):
     """
     This function will:
         1. Find the original gene data for each cell in the top-n

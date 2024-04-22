@@ -1,6 +1,7 @@
 """
 Contains function that query our Milvus collections
 """
+import json
 import math
 import os
 import re
@@ -241,7 +242,6 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
     print(f'Retrieving vectors...')
     res = client.get(collection_name=collection_name, ids=root_vector_ids)
     res.sort(key=lambda x: x['primary_key'], reverse=False)
-
     # Extract query vectors
     query_vectors = []
     for item in res:
@@ -259,21 +259,21 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
     # Process results
     print(f'Processing results...')
     output = {}
-    filenames = set()
-    for query in res:
+    # filenames = set()
+    for i, query in enumerate(res):
         results = []
         for match in query:
             vector_id = match['id']  # Accessing the first element of the list
             cosine_similarity_value = match['distance']
-            file_name = match['entity']['file_name']
-            filenames.add(file_name)
+            # file_name = match['entity']['file_name']
+            # filenames.add(file_name)
 
             # Append the tuple (vector_id, cell_name, file_name, cosine_similarity_value) to the results list
-            results.append((vector_id, cosine_similarity_value, file_name))
+            results.append((vector_id, cosine_similarity_value))
 
         # Sort results by cosine similarity value (descending order)
         results.sort(key=lambda x: x[1], reverse=True)
 
-        output[query[0]['id']] = results
+        output[root_vector_ids[i]] = results
 
-    return output, filenames
+    return output
