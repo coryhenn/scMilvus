@@ -1,12 +1,25 @@
 import os
 
+import numpy as np
 import pandas as pd
 # import scanpy as sc
 from matplotlib.pyplot import rc_context
 
+def get_similar_cell_ids(similarity_obj, file, top_n=10):
 
-# Todo: Jason: Implement this
-def get_similar_genes(similarity_obj, top_n=10):
+    cell_ids = pd.DataFrame(columns=['Cell_id'])
+
+    for query_vec in similarity_obj[0].keys():
+        for match in similarity_obj[0][query_vec]:
+
+            cell_id = match[0]
+            cell_ids.loc[len(cell_ids)] = cell_id
+
+    save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825_CELL_IDS.csv')
+    cell_ids.to_csv(save_path, index=False)
+
+
+def get_similar_genes(similarity_obj, file, top_n=10):
     """
     This function will:
         1. Find the original gene data for each cell in the top-n
@@ -28,10 +41,12 @@ def get_similar_genes(similarity_obj, top_n=10):
 
 
     # Get original gene data
-    cell_genes = {}
-    for file in similarity_obj[1]:
-        filepath = os.path.join('data', file)
-        cell_genes[file] = pd.read_csv(filepath, delimiter=',', nrows=0)
+    filepath = os.path.join('data', file)
+    print(f'Loading data from {filepath}... ', end='')
+    raw_data = pd.read_csv(filepath, delimiter=',')
+    print('Done')
+
+    cell_genes = pd.DataFrame(columns=np.arange(len(raw_data.columns)))
     for query_vec in similarity_obj[0].keys():
         counter = 0
         for match in similarity_obj[0][query_vec]:
@@ -39,47 +54,45 @@ def get_similar_genes(similarity_obj, top_n=10):
             cell_id = match[0]
             print(f'file {counter} (id {cell_id}): {match}')
 
-            filepath = os.path.join('data', match[2])
+            #filepath = os.path.join('data', match[2])
 
-            data = pd.read_csv(filepath, delimiter=',', nrows=1, skiprows=cell_id-724, header=None)
+            #data = pd.read_csv(filepath, delimiter=',', nrows=1, skiprows=cell_id-724, header=None)
+            data = raw_data.loc[raw_data['Unnamed: 0'] == cell_id]
             data_list = data.loc[:, :].values.flatten().tolist()
-            cell_genes[match[2]].loc[len(cell_genes[match[2]])] = data_list
+            cell_genes.loc[len(cell_genes)] = data_list
 
             counter += 1
 
+    print(cell_genes.head(10))
 
     # Find the top_n most expressed genes
     # Code from: https://stackoverflow.com/questions/34518634/finding-highest-values-in-each-row-in-a-data-frame-for-python
     # expressed_genes = pd.DataFrame({n: df.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(df.T)}).T
     # index = 0
     # offset = len(similarity_obj[0].keys())
-    top_n_cell_genes = {}
-    for file in cell_genes.keys():
-        data = cell_genes[file]
-        cell_ids = data[['Unnamed: 0']].copy()
-        cell_ids.rename(columns={'Unnamed: 0': -1}, inplace=True)
-        data = data.drop(columns=['Unnamed: 0'], axis=1)
-        expressed_genes = pd.DataFrame({n: data.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(data.T)}).T
+    data = cell_genes
+    cell_ids = data[[0]].copy()
+    save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825_CELL_IDS.csv')
+    cell_ids.to_csv(save_path, index=False)
+    return
+    cell_ids.rename(columns={0: -1}, inplace=True)
+    data = data.drop(columns=[0], axis=1)
+    expressed_genes = pd.DataFrame({n: data.T[col].nlargest(top_n).index.tolist() for n, col in enumerate(data.T)}).T
 
-        # Join back in cell_ids
-        expressed_genes = expressed_genes.join(cell_ids)
+    # Join back in cell_ids
+    expressed_genes = expressed_genes.join(cell_ids)
 
-        # Put cell_id column first
-        expressed_genes = expressed_genes.reindex(columns=sorted(expressed_genes.columns))
-        expressed_genes.rename(columns={-1: 'cell_ids'}, inplace=True)
-        top_n_cell_genes[file] = expressed_genes
+    # Put cell_id column first
+    expressed_genes = expressed_genes.reindex(columns=sorted(expressed_genes.columns))
+    expressed_genes.rename(columns={-1: 'cell_ids'}, inplace=True)
 
-
-
-
-    for file in top_n_cell_genes.keys():
-        save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825.csv')
-        top_n_cell_genes[file].to_csv(save_path, index=False)
+    save_path = os.path.join('data', f'{file}_top{top_n}_to_id_825.csv')
+    expressed_genes.to_csv(save_path, index=False)
 
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 300)
     #print(f'cell_genes: {cell_genes}')
-    print(f'expressed genes: {top_n_cell_genes}')
+    print(f'expressed genes: {expressed_genes}')
 
 
 
