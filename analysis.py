@@ -9,29 +9,44 @@ from database_connections import find_similarities
 
 
 def find_clusters(collection, seed_ids, limit=1024, iterations=5):
-
+    if len(seed_ids) != 1:
+        print(f'Can only seed with one cell id. Exiting...')
+        return
+    cutoff = iterations-1
     results = {}
     already_queried = set()
     next_queries = seed_ids
+    size = 100
     while iterations > 0:
         print(f'iter: {iterations}')
-        # print(f'next_queries: {next_queries}')
+        #print(f'already queried: {already_queried}')
+        #print(f'next_queries: {next_queries}')
         length = len(next_queries)
         if length:
             send_list = []
-            if length > 4:
-                for i in range(4, len(next_queries), 4):
-                    temp = [next_queries[i-3], next_queries[i-2], next_queries[i-1], next_queries[i]]
+            if length > size:
+                i = size
+                while i < length:
+                    temp = []
+                    for j in range(i-size, i):
+                        temp.append(next_queries[j])
                     send_list.append(temp)
+                    i += size
+                if length % i-size:
+                    temp = []
+                    for j in range(i-size, length):
+                        temp.append(next_queries[j])
+                    send_list.append(temp)
+                #print(f'send_list_create: {send_list}')
             else:
-                send_list = next_queries
+                send_list.append(next_queries)
 
             next_queries = []
             #print(f'send list: {send_list}')
+            print(f'cells to query: {length}')
+            count = 0
             for list1 in send_list:
-                if type(list1) is int:
-                    list1 = [list1]
-                #print(f'list1: {list1}')
+                #print(f'Querying: {list1[:10]}...')
                 milvus = find_similarities(collection, list1, limit)
                 #print(f'mil: {milvus}')
                 for cell_id in milvus.keys():
@@ -40,14 +55,28 @@ def find_clusters(collection, seed_ids, limit=1024, iterations=5):
                     else:
                         results[cell_id] = 1
                     already_queried.add(cell_id)
+                    #print(f'\tAQ: {already_queried}')
                     for id2, _ in milvus[cell_id]:
                         # id, similarity tuple
                         if id2 not in already_queried:
+                            #print(f'\tAdding {id2} to query')
                             next_queries.append(id2)
-        iterations -= 1
-        print(f'res: {results}')
 
-    return results
+                count += len(list1)
+                print(f'cells to query: {length}, done: {count}')
+        iterations -= 1
+        # print(f'res: {results}')
+
+    # Only return cells that appear iterations-1 times
+    out = pd.DataFrame(columns=['cell_id', 'count'])
+    for cid in results.keys():
+        if results[cid] >= cutoff:
+            temp = (cid, results[cid])
+            out.loc[len(out)] = temp
+    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}_results.csv')
+    out.to_csv(save_path, index=False)
+
+    return out
 
     # print(f'iteration: {iterations}')
     # print(f'res beginning: {results}')
