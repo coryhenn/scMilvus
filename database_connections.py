@@ -231,15 +231,15 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
         print(f'Error: root_vector_ids must be a list.')
         return
 
-    print(f'** Finding similarities function **')
+    #print(f'** Finding similarities function **')
 
     # Set up a Milvus client
-    print(f'Connecting to Milvus...')
+    #print(f'Connecting to Milvus...')
     client = MilvusClient(uri=CLUSTER_ENDPOINT, token=TOKEN)
 
     # Get the root vectors from Milvus
     root_vector_ids.sort()
-    print(f'Retrieving vectors...')
+    #print(f'Retrieving vectors...')
     res = client.get(collection_name=collection_name, ids=root_vector_ids)
     res.sort(key=lambda x: x['primary_key'], reverse=False)
     # Extract query vectors
@@ -248,7 +248,7 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
         query_vectors.append(item['vector'])
 
     # Perform search
-    print(f'Performing cosine similarity query...')
+    #print(f'Performing cosine similarity query...')
     res = client.search(
         collection_name=collection_name,  # target collection
         data=query_vectors,  # query vectors
@@ -257,7 +257,7 @@ def find_similarities(collection_name, root_vector_ids, limit=10):
     )
 
     # Process results
-    print(f'Processing results...')
+    #print(f'Processing results...')
     output = {}
     # filenames = set()
     for i, query in enumerate(res):

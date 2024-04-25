@@ -1,3 +1,4 @@
+import copy
 import os
 
 import numpy as np
@@ -7,14 +8,73 @@ from matplotlib.pyplot import rc_context
 from database_connections import find_similarities
 
 
-def find_clusters(collection, seed_ids):
+def find_clusters(collection, seed_ids, limit=1024, iterations=5):
 
-    num_ids = len(seed_ids)
-    out = {}
-    for cell_id in seed_ids:
-        cell_results = {}
-        res = find_similarities(collection, [cell_id], limit=1024)
-        for ids2 in res.keys():
+    results = {}
+    already_queried = set()
+    next_queries = seed_ids
+    while iterations > 0:
+        print(f'iter: {iterations}')
+        # print(f'next_queries: {next_queries}')
+        length = len(next_queries)
+        if length:
+            send_list = []
+            if length > 4:
+                for i in range(4, len(next_queries), 4):
+                    temp = [next_queries[i-3], next_queries[i-2], next_queries[i-1], next_queries[i]]
+                    send_list.append(temp)
+            else:
+                send_list = next_queries
+
+            next_queries = []
+            #print(f'send list: {send_list}')
+            for list1 in send_list:
+                if type(list1) is int:
+                    list1 = [list1]
+                #print(f'list1: {list1}')
+                milvus = find_similarities(collection, list1, limit)
+                #print(f'mil: {milvus}')
+                for cell_id in milvus.keys():
+                    if cell_id in results.keys():
+                        results[cell_id] += 1
+                    else:
+                        results[cell_id] = 1
+                    already_queried.add(cell_id)
+                    for id2, _ in milvus[cell_id]:
+                        # id, similarity tuple
+                        if id2 not in already_queried:
+                            next_queries.append(id2)
+        iterations -= 1
+        print(f'res: {results}')
+
+    return results
+
+    # print(f'iteration: {iterations}')
+    # print(f'res beginning: {results}')
+    # if iterations > 0:
+    #     milvus = find_similarities(collection, seed_ids, limit)
+    #     print(f'milvus: {milvus}')
+    #     for cell_id in milvus.keys():
+    #         if cell_id in results.keys():
+    #             results[cell_id] += 1
+    #         else:
+    #             results[cell_id] = 1
+    #         already_queried.add(cell_id)
+    #
+    #         next_queries = []
+    #         for id2, _ in milvus[cell_id]:
+    #             # id, similarity tuple
+    #             if id2 not in already_queried:
+    #                 print(f'not queried: {id2}')
+    #                 next_queries.append(id2)
+    #
+    #         print(f'next queries: {next_queries}')
+    #         print(f'res before: {results}')
+    #         results = find_clusters(collection, next_queries, results, already_queried, limit=limit, iterations=iterations-1)
+    #         print(f'res after: {results}')
+    # else:
+    #     print(f'END RES: {results}')
+    #     return copy.deepcopy(results)
 
 
 
