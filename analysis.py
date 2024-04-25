@@ -73,7 +73,7 @@ def find_clusters(collection, seed_ids, limit=1024, iterations=5):
         if results[cid] >= cutoff:
             temp = (cid, results[cid])
             out.loc[len(out)] = temp
-    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}_results.csv')
+    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}_i{cutoff+1}_l{limit}.csv')
     out.to_csv(save_path, index=False)
 
     return out
