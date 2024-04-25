@@ -4,16 +4,30 @@ import numpy as np
 import pandas as pd
 # import scanpy as sc
 from matplotlib.pyplot import rc_context
+from database_connections import find_similarities
+
+
+def find_clusters(collection, seed_ids):
+
+    num_ids = len(seed_ids)
+    out = {}
+    for cell_id in seed_ids:
+        cell_results = {}
+        res = find_similarities(collection, [cell_id], limit=1024)
+        for ids2 in res.keys():
+
+
+
 
 def get_similar_cell_ids(similarity_obj):
 
     for query_vec in similarity_obj.keys():
         print(query_vec)
-        cell_ids = pd.DataFrame(columns=[f'Cell_ids_query_{query_vec}'])
+        cell_ids = pd.DataFrame(columns=[f'Cell_ids_query_{query_vec}', 'cosine_sim'])
         for match in similarity_obj[query_vec]:
 
             cell_id = match[0]
-            cell_ids.loc[len(cell_ids)] = cell_id
+            cell_ids.loc[len(cell_ids)] = (cell_id, match[1])
 
         save_path = os.path.join('data', f'ex_2_Pool_B_query{query_vec}.csv')
         cell_ids.to_csv(save_path, index=False)
