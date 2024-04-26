@@ -17,19 +17,26 @@ def find_clusters(collection, seed_ids, limit=1024, iterations=5):
     already_queried = set()
     next_queries = seed_ids
     size = 100
+    counter2 = 0
     while iterations > 0:
         print(f'iter: {iterations}')
-        #print(f'already queried: {already_queried}')
-        #print(f'next_queries: {next_queries}')
+        print(f'already queried: {already_queried}')
+        print(f'next_queries: {next_queries}')
+        print(f'should be {len(next_queries) + counter2}')
+        counter2 += len(next_queries)
+
         length = len(next_queries)
         if length:
+            current_query = set()
             send_list = []
             if length > size:
                 i = size
                 while i < length:
                     temp = []
                     for j in range(i-size, i):
-                        temp.append(next_queries[j])
+                        if next_queries[j] not in current_query:
+                            temp.append(next_queries[j])
+                            current_query.add(next_queries[j])
                     send_list.append(temp)
                     i += size
                 if length % i-size:
@@ -43,27 +50,31 @@ def find_clusters(collection, seed_ids, limit=1024, iterations=5):
 
             next_queries = []
             #print(f'send list: {send_list}')
-            print(f'cells to query: {length}')
+            length = len(send_list)
+            #print(f'cells to query: {length*size}')
             count = 0
             for list1 in send_list:
                 #print(f'Querying: {list1[:10]}...')
                 milvus = find_similarities(collection, list1, limit)
+                for l in list1:
+                    already_queried.add(l)
                 #print(f'mil: {milvus}')
                 for cell_id in milvus.keys():
                     if cell_id in results.keys():
                         results[cell_id] += 1
                     else:
                         results[cell_id] = 1
-                    already_queried.add(cell_id)
                     #print(f'\tAQ: {already_queried}')
                     for id2, _ in milvus[cell_id]:
                         # id, similarity tuple
                         if id2 not in already_queried:
                             #print(f'\tAdding {id2} to query')
                             next_queries.append(id2)
+                        else:
+                            print(f'skipping {id2}')
 
-                count += len(list1)
-                print(f'cells to query: {length}, done: {count}')
+                count += 1
+                print(f', Actual: {len(already_queried)}')
         iterations -= 1
         # print(f'res: {results}')
 
