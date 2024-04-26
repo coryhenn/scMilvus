@@ -9,82 +9,81 @@ from database_connections import find_similarities
 
 
 def find_clusters(collection, seed_ids, limit=1024, iterations=5):
-    if len(seed_ids) != 1:
-        print(f'Can only seed with one cell id. Exiting...')
-        return
-    cutoff = iterations-1
+    cutoff = limit * iterations
+    it_temp = iterations
     results = {}
+    next_queries = set(seed_ids)
     already_queried = set()
-    next_queries = seed_ids
     size = 100
-    counter2 = 0
+    queried_cells = 0
     while iterations > 0:
         print(f'iter: {iterations}')
-        print(f'already queried: {already_queried}')
-        print(f'next_queries: {next_queries}')
-        print(f'should be {len(next_queries) + counter2}')
-        counter2 += len(next_queries)
-
+        # print(f'already queried: {already_queried}')
+        # print(f'next_queries: {next_queries}')
         length = len(next_queries)
-        if length:
-            current_query = set()
-            send_list = []
-            if length > size:
-                i = size
-                while i < length:
-                    temp = []
-                    for j in range(i-size, i):
-                        if next_queries[j] not in current_query:
-                            temp.append(next_queries[j])
-                            current_query.add(next_queries[j])
-                    send_list.append(temp)
-                    i += size
-                if length % i-size:
-                    temp = []
-                    for j in range(i-size, length):
-                        temp.append(next_queries[j])
-                    send_list.append(temp)
-                #print(f'send_list_create: {send_list}')
-            else:
-                send_list.append(next_queries)
 
-            next_queries = []
-            #print(f'send list: {send_list}')
-            length = len(send_list)
-            #print(f'cells to query: {length*size}')
-            count = 0
-            for list1 in send_list:
-                #print(f'Querying: {list1[:10]}...')
-                milvus = find_similarities(collection, list1, limit)
-                for l in list1:
-                    already_queried.add(l)
-                #print(f'mil: {milvus}')
-                for cell_id in milvus.keys():
-                    if cell_id in results.keys():
-                        results[cell_id] += 1
+        print(f'cells to query: {length}')
+        exit_loop = False
+        next_queries2 = set()
+        counter = size
+        while True:
+            query_list = []
+            for j in range(size):
+                try:
+                    query_list.append(next_queries.pop())
+                except KeyError:
+                    exit_loop = True
+                    break
+
+            #print(f'query list: {query_list}')
+            if not len(query_list):
+                break
+
+            milvus = find_similarities(collection, query_list, limit)
+            queried_cells += len(query_list)
+            print(f'Queried {counter}...')
+            counter += size
+
+            #print(milvus)
+            for cell_id in milvus.keys():
+                #print(milvus[cell_id])
+                for cell_id2, _ in milvus[cell_id]:
+                    if cell_id2 in results.keys():
+                        results[cell_id2] += 1
                     else:
-                        results[cell_id] = 1
-                    #print(f'\tAQ: {already_queried}')
-                    for id2, _ in milvus[cell_id]:
-                        # id, similarity tuple
-                        if id2 not in already_queried:
-                            #print(f'\tAdding {id2} to query')
-                            next_queries.append(id2)
-                        else:
-                            print(f'skipping {id2}')
+                        results[cell_id2] = 1
 
-                count += 1
-                print(f', Actual: {len(already_queried)}')
+                already_queried.add(cell_id)
+                # print(f'\tAQ: {already_queried}')
+                for id2, _ in milvus[cell_id]:
+                    # id, similarity tuple
+                    if id2 not in already_queried:
+                        # print(f'\tAdding {id2} to query')
+                        next_queries2.add(id2)
+
+            if exit_loop:
+                break
+
+        next_queries = set(next_queries2)
+        # print(f'Queries for next it: {next_queries}')
+
+        # print(f'cells to query: {length}')
+
         iterations -= 1
-        # print(f'res: {results}')
 
+
+    counter3 = 0
+    for key in results.keys():
+        counter3 += results[key]
+    print(f'queried cells: {queried_cells}, result length: {len(results.keys())}, res total: {counter3}')
+    print(results)
     # Only return cells that appear iterations-1 times
     out = pd.DataFrame(columns=['cell_id', 'count'])
     for cid in results.keys():
         if results[cid] >= cutoff:
             temp = (cid, results[cid])
             out.loc[len(out)] = temp
-    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}_i{cutoff+1}_l{limit}.csv')
+    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}-list_i{it_temp}_l{limit}.csv')
     out.to_csv(save_path, index=False)
 
     return out
