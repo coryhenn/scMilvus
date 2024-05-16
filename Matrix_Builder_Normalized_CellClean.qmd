@@ -1,0 +1,233 @@
+---
+title: "PoolA Centered and Scaled Clean"
+author: "Cory Henn"
+format: html
+editor: visual
+---
+
+```{r}
+library(Seurat)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(Matrix)
+library(reticulate)
+library(umap)
+library(tsne)
+library(ggraph)
+library(ggrastr)
+library(patchwork)
+```
+
+
+## Build the expression matrix for PoolA and create a Seurat Object
+```{r}
+expression_matrix <- ReadMtx(
+  mtx = "fil_b_matrix.mtx", features = "fil_a_features.tsv",
+  cells = "fil_b_barcodes.csv")
+seurat_object <- CreateSeuratObject(counts = expression_matrix)
+```
+
+## Read in the real cell names (barcodes)
+```{r}
+# Read the CSV file without header and set row names manually starting from 0
+cell_names <- read.csv("fil_b_barcodes_real.csv", header = FALSE)
+row.names(cell_names) <- 0:(nrow(cell_names) - 1)
+# Add the "Tissue_Type" header to the second column
+colnames(cell_names)[1] <- "Barcode"
+```
+
+## Turn cell_names into a DF
+```{r}
+cell_names <- data.frame(cell_names = cell_names)
+```
+
+## Read in cell labels (tissue type) 
+```{r}
+tissue_type <- read.table("fil_b_labels.tsv", header = FALSE, sep = "\t")  ## used to be cell_labels
+```
+
+## Assign the cell labels (tissue types) to the cells
+```{r}
+# Assign cluster labels to the Seurat object's metadata
+seurat_object$TissueType <- as.factor(tissue_type$V2)
+```
+
+```{r}
+head(seurat_object[["RNA"]]$counts)
+```
+
+## Normalize the data
+```{r}
+seurat_object <- NormalizeData(seurat_object, normalization.method = "LogNormalize")
+seurat_object <- ScaleData(seurat_object, verbose = FALSE)
+```
+
+```{r}
+dim(seurat_object)
+```
+
+## Create table of cells that aren't viable from the dataset
+```{r}
+seurat_object$discard <- (seurat_object$nCount_RNA < 1000 | seurat_object$nFeature_RNA < 750)
+```
+
+```{r}
+print(seurat_object@meta.data[["discard"]])
+```
+
+
+## Remove those non-viable cells from the dataset
+```{r}
+# Create a logical vector to identify cells to discard
+cells_to_discard <- seurat_object$discard
+
+# Subset cells based on the logical vector, keeping all genes
+seurat_object <- seurat_object[, !cells_to_discard]
+dim(seurat_object)
+```
+
+## Turn the discarded cell information into a DF 
+```{r}
+# Convert the vector to a data frame
+discarded_cells <- data.frame(discarded_cells = cells_to_discard)
+```
+
+## Make a new list of the cell barcodes with the non-viable cells removed to match the DF
+```{r}
+# Remove rows from cell_names where discarded_cells is TRUE
+cell_names <- cell_names[!discarded_cells$discarded_cells, ]
+cell_names <- data.frame(cell_names = cell_names)
+```
+
+
+```{r}
+dim(seurat_object)
+```
+
+```{r}
+genes_to_keep <- (rowSums(seurat_object[["RNA"]]$counts) > 0)
+seurat_object <- seurat_object[genes_to_keep,]
+dim(seurat_object)
+```
+
+
+```{r}
+print(seurat_object[["RNA"]]$scale.data)
+```
+
+```{r}
+# Step 1: Extract RNA counts
+rna_counts <- seurat_object[["RNA"]]$scale.data
+
+# Step 2: Transpose the RNA counts matrix
+transposed_counts <- t(rna_counts)
+
+# Step 3: View the head of the transposed matrix
+head(transposed_counts)
+```
+
+```{r}
+dim(transposed_counts)
+```
+
+
+```{r}
+# Convert to a dense matrix
+dense_matrix <- as.matrix(transposed_counts)
+
+# View the head of the dense matrix
+head(dense_matrix)
+```
+
+```{r}
+write.csv(transposed_counts, file = "PoolB_DM_Scale_Centered_CellClean.csv", row.names = TRUE)
+```
+
+```{r}
+tissue_type <- (seurat_object@meta.data[["TissueType"]])
+print(tissue_type)
+```
+
+```{r}
+# Convert the vector to a data frame
+tissue_type <- data.frame(tissue_type = tissue_type)
+
+# Add the "Tissue_Type" header to the second column
+colnames(tissue_type)[1] <- "Tissue_Type"
+```
+
+```{r}
+# Write the modified data frame to a CSV file with headers
+write.csv(tissue_type, file = "Tissue_TypeB.csv", row.names = FALSE)
+```
+
+```{r}
+    # Write the data frame to a CSV file
+write.csv(cell_names, file = "Cell_NamesB.csv", row.names = FALSE)
+```
+
+#Analyses
+
+## Seurat object identification of variable genes
+
+```{r}
+#seurat_object <- FindVariableFeatures(seurat_object) # nfeatures = 2000 by default
+seurat_object <- FindVariableFeatures(seurat_object, selection.method = "vst", nfeatures = 2000)
+top_10_genes <- head(VariableFeatures(seurat_object), 10)
+```
+
+```{r}
+vf_plot <- VariableFeaturePlot(seurat_object)
+LabelPoints(plot = vf_plot, points = top_10_genes, repel = TRUE, xnudge = 0, ynudge = 0)
+```
+
+```{r}
+head(seurat_object[["RNA"]]$scale.data)
+```
+
+## Run a Principal Components Analysis with the Seurat RunPCA function
+
+```{r}
+#seurat_object <- ScaleData(seurat_object, verbose = FALSE)
+seurat_object <- RunPCA(seurat_object, verbose = FALSE)
+#seurat_object <- RunPCA(seurat_object, features = VariableFeatures(object = seurat_object))
+```
+
+```{r}
+seurat_object[["pca"]]@cell.embeddings[1:6, 1:20]
+```
+
+```{r}
+VizDimLoadings(seurat_object, dims = 1:5, nfeatures = 5, reduction = "pca")
+```
+
+```{r}
+DimPlot(seurat_object, label.size = 4, repel = TRUE, label = TRUE, reduction = "pca")
+```
+
+```{r}
+ElbowPlot(seurat_object, ndims = 50)
+```
+
+## UMAP and tSNE reduction after PCA with Seurat RunUMAP and RunTSNE functions
+
+```{r}
+seurat_object <- FindNeighbors(seurat_object, dims = 1:20)
+seurat_object <- FindClusters(seurat_object, resolution = 0.8)
+```
+
+## Seurat UMAP
+
+```{r}
+seurat_object <- RunUMAP(seurat_object, dims = 1:20, metric = "cosine", n_neighbors = 50L, repulsion.strength = 1)
+```
+
+```{r}
+DimPlot(seurat_object, label.size = 4, repel = TRUE, label = FALSE, reduction = "umap", group.by = "TissueType")
+```
+
+```{r}
+umap_plot <- DimPlot(seurat_object, label.size = 4, repel = TRUE, label = TRUE, reduction = "umap")
+print(umap_plot)
+```
