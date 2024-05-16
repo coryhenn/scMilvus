@@ -1,19 +1,132 @@
+import copy
 import os
 
 import numpy as np
 import pandas as pd
 # import scanpy as sc
 from matplotlib.pyplot import rc_context
+from database_connections import find_similarities
+
+
+def find_clusters(collection, seed_ids, limit=1024, iterations=5):
+    cutoff = limit * iterations
+    it_temp = iterations
+    results = {}
+    next_queries = set(seed_ids)
+    already_queried = set()
+    size = 100
+    queried_cells = 0
+    while iterations > 0:
+        print(f'iter: {iterations}')
+        # print(f'already queried: {already_queried}')
+        # print(f'next_queries: {next_queries}')
+        length = len(next_queries)
+
+        print(f'cells to query: {length}')
+        exit_loop = False
+        next_queries2 = set()
+        counter = size
+        while True:
+            query_list = []
+            for j in range(size):
+                try:
+                    query_list.append(next_queries.pop())
+                except KeyError:
+                    exit_loop = True
+                    break
+
+            #print(f'query list: {query_list}')
+            if not len(query_list):
+                break
+
+            milvus = find_similarities(collection, query_list, limit)
+            queried_cells += len(query_list)
+            print(f'Queried {counter}...')
+            counter += size
+
+            #print(milvus)
+            for cell_id in milvus.keys():
+                #print(milvus[cell_id])
+                for cell_id2, _ in milvus[cell_id]:
+                    if cell_id2 in results.keys():
+                        results[cell_id2] += 1
+                    else:
+                        results[cell_id2] = 1
+
+                already_queried.add(cell_id)
+                # print(f'\tAQ: {already_queried}')
+                for id2, _ in milvus[cell_id]:
+                    # id, similarity tuple
+                    if id2 not in already_queried:
+                        # print(f'\tAdding {id2} to query')
+                        next_queries2.add(id2)
+
+            if exit_loop:
+                break
+
+        next_queries = set(next_queries2)
+        # print(f'Queries for next it: {next_queries}')
+
+        # print(f'cells to query: {length}')
+
+        iterations -= 1
+
+
+    counter3 = 0
+    for key in results.keys():
+        counter3 += results[key]
+    print(f'queried cells: {queried_cells}, result length: {len(results.keys())}, res total: {counter3}')
+    print(results)
+    # Only return cells that appear iterations-1 times
+    out = pd.DataFrame(columns=['cell_id', 'count'])
+    for cid in results.keys():
+        if results[cid] >= cutoff:
+            temp = (cid, results[cid])
+            out.loc[len(out)] = temp
+    save_path = os.path.join('data', f'ex_2_seed{seed_ids[0]}-list_i{it_temp}_l{limit}.csv')
+    out.to_csv(save_path, index=False)
+
+    return out
+
+    # print(f'iteration: {iterations}')
+    # print(f'res beginning: {results}')
+    # if iterations > 0:
+    #     milvus = find_similarities(collection, seed_ids, limit)
+    #     print(f'milvus: {milvus}')
+    #     for cell_id in milvus.keys():
+    #         if cell_id in results.keys():
+    #             results[cell_id] += 1
+    #         else:
+    #             results[cell_id] = 1
+    #         already_queried.add(cell_id)
+    #
+    #         next_queries = []
+    #         for id2, _ in milvus[cell_id]:
+    #             # id, similarity tuple
+    #             if id2 not in already_queried:
+    #                 print(f'not queried: {id2}')
+    #                 next_queries.append(id2)
+    #
+    #         print(f'next queries: {next_queries}')
+    #         print(f'res before: {results}')
+    #         results = find_clusters(collection, next_queries, results, already_queried, limit=limit, iterations=iterations-1)
+    #         print(f'res after: {results}')
+    # else:
+    #     print(f'END RES: {results}')
+    #     return copy.deepcopy(results)
+
+
+
 
 def get_similar_cell_ids(similarity_obj):
 
     for query_vec in similarity_obj.keys():
         print(query_vec)
-        cell_ids = pd.DataFrame(columns=[f'Cell_ids_query_{query_vec}'])
+        cell_ids = pd.DataFrame(columns=[f'Cell_ids_query_{query_vec}', 'cosine_sim'])
         for match in similarity_obj[query_vec]:
 
             cell_id = match[0]
-            cell_ids.loc[len(cell_ids)] = cell_id
+            cell_ids.loc[len(cell_ids)] = (cell_id, match[1])
 
         save_path = os.path.join('data', f'ex_2_Pool_B_query{query_vec}.csv')
         cell_ids.to_csv(save_path, index=False)
