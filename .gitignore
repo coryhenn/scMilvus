@@ -11,3 +11,6 @@ data
 
 # Ignore Jason scratchwork
 tests_Jason
+
+# Ignore my old implementation of scMilvus
+scMilvus.py
