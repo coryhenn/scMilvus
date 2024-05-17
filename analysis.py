@@ -9,6 +9,34 @@ from database_connections import find_similarities
 
 
 def find_clusters(collection, seed_ids, limit=1024, iterations=5):
+    """
+    Identifies clusters of similar cells starting from seed cell IDs and iteratively expands the search.
+
+    This function starts with a set of seed cell IDs and iteratively queries for similar cells from a given collection.
+    It accumulates the results over several iterations, filtering out cells that appear less frequently than a defined cutoff.
+    The final results are saved to a CSV file.
+
+    :param collection (object): The collection object to query against. This is typically a database or data structure containing cell information.
+    :param seed_ids (list): A list of initial cell IDs to start the clustering process.
+    :param limit (int, optional): The maximum number of similar cells to retrieve per query. Defaults to 1024.
+    :param iterations (int, optional): The number of iterations to perform. Defaults to 5.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing the cell IDs and their counts that meet the frequency cutoff.
+
+    Example:
+    collection = ...  # Some collection object
+    seed_ids = [123, 456, 789]
+    df_clusters = find_clusters(collection, seed_ids)
+    print(df_clusters)
+    
+    The above example will start the clustering process with the given seed IDs and will output a DataFrame with the
+    clustered cell IDs and their counts.
+
+    Note:
+    The function saves the results to a CSV file in the 'data' directory. The file name includes the first seed ID,
+    the number of iterations, and the limit used for the queries.
+    """
     cutoff = limit * iterations
     it_temp = iterations
     results = {}
@@ -119,6 +147,34 @@ def find_clusters(collection, seed_ids, limit=1024, iterations=5):
 
 
 def get_similar_cell_ids(similarity_obj):
+    """
+    Processes similarity data and saves the results to CSV files.
+
+    This function takes a dictionary of similarity objects where each key represents a query vector,
+    and the value is a list of tuples containing cell IDs and their corresponding cosine similarity scores.
+    For each query vector, the function creates a DataFrame to store the cell IDs and their cosine similarity scores,
+    and then saves this DataFrame as a CSV file in the 'data' directory.
+
+    :param similarity_obj (dict): A dictionary where keys are query vectors (typically identifiers) and values are lists of tuples.
+                           Each tuple contains a cell ID and a cosine similarity score.
+
+    Example:
+    similarity_obj = {
+        'query1': [(123, 0.98), (456, 0.95)],
+        'query2': [(789, 0.99), (101, 0.97)]
+    }
+    get_similar_cell_ids(similarity_obj)
+
+    This will create two CSV files in the 'data' directory:
+    - 'ex_2_Pool_B_queryquery1.csv' containing:
+        Cell_ids_query_query1, cosine_sim
+        123, 0.98
+        456, 0.95
+    - 'ex_2_Pool_B_queryquery2.csv' containing:
+        Cell_ids_query_query2, cosine_sim
+        789, 0.99
+        101, 0.97
+    """
 
     for query_vec in similarity_obj.keys():
         print(query_vec)
