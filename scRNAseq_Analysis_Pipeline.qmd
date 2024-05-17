@@ -1,5 +1,5 @@
 ---
-title: "CS564 scRNAseq Analysis Pipeline"
+title: "scRNAseq Analysis Pipeline"
 author: "Cory Henn"
 format: html
 editor: visual
@@ -21,7 +21,7 @@ library(HGNChelper)
 ```
 
 
-## Build the expression matrix for PoolA and create a Seurat Object
+## Build the expression matrix and create a Seurat Object
 ```{r}
 expression_matrix <- ReadMtx(
   mtx = "fil_b_matrix.mtx", features = "fil_a_features.tsv",
@@ -98,9 +98,14 @@ LabelPoints(plot = vf_plot, points = top_10_genes, repel = TRUE, xnudge = 0, ynu
 
 ```{r}
 seurat_object <- RunPCA(seurat_object, verbose = FALSE)
+```
+
+## Use for PCA of just variable features
+```{r}
 #seurat_object <- RunPCA(seurat_object, features = VariableFeatures(object = seurat_object))
 ```
 
+## Visualize the PCA information
 ```{r}
 seurat_object[["pca"]]@cell.embeddings[1:6, 1:20]
 ```
@@ -123,8 +128,6 @@ ElbowPlot(seurat_object, ndims = 50)
 seurat_object <- FindNeighbors(seurat_object, dims = 1:20)
 seurat_object <- FindClusters(seurat_object, resolution = 0.8)
 ```
-
-## Seurat UMAP
 
 ```{r}
 seurat_object <- RunUMAP(seurat_object, dims = 1:50, metric = "cosine", n_neighbors = 50L, repulsion.strength = 1)
@@ -162,7 +165,7 @@ write.csv(cells_in_cluster, file = "R_Similarity.csv", row.names = FALSE)
 ```
 
 
-## Run SCType for cell identification
+## Run SCType for cell type identification
 
 ```{r}
 # load gene set preparation function
@@ -220,6 +223,8 @@ dim(seurat_object@reductions[["pca"]]@cell.embeddings)
 head(seurat_object@reductions[["pca"]]@cell.embeddings)
 ```
 
+
+## Create PCA df for more reliable comparison with scMilvus Python pipeline
 ```{r}
 PCA_df <- seurat_object@reductions[["pca"]]@cell.embeddings
 print(PCA_df)
@@ -232,23 +237,6 @@ print(PCA_df)
 write.csv(PCA_df, file = "PCA_df.csv", row.names = FALSE)
 ```
 
-## New on PCA similarity
-
-```{r}
-# Accessing the PCA embeddings
-pca_embeddings <- seurat_object[["pca"]]@cell.embeddings
-print(pca_embeddings)
-```
-
-```{r}
-pca_dist <- dist(pca_embeddings)
-
-# Convert distance object to matrix
-cosine_matrix <- as.matrix(pca_dist)
-
-# Print cosine distances matrix
-print(cosine_matrix)
-```
 
 
 
