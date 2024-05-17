@@ -1,0 +1,242 @@
+---
+title: "scRNAseq Analysis Pipeline"
+author: "Cory Henn"
+format: html
+editor: visual
+---
+
+```{r}
+library(Seurat)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(Matrix)
+library(reticulate)
+library(umap)
+library(tsne)
+library(ggraph)
+library(ggrastr)
+library(patchwork)
+library(HGNChelper)
+```
+
+
+## Build the expression matrix and create a Seurat Object
+```{r}
+expression_matrix <- ReadMtx(
+  mtx = "fil_b_matrix.mtx", features = "fil_a_features.tsv",
+  cells = "fil_b_barcodes.csv")
+seurat_object <- CreateSeuratObject(counts = expression_matrix)
+```
+
+```{r}
+dim(seurat_object)
+```
+
+
+## Read in cell labels (tissue type) 
+```{r}
+tissue_type <- read.table("fil_b_labels.tsv", header = FALSE, sep = "\t")  ## used to be cell_labels
+```
+
+## Assign the cell labels (tissue types) to the cells
+```{r}
+# Assign cluster labels to the Seurat object's metadata
+seurat_object$TissueType <- as.factor(tissue_type$V2)
+```
+
+## Normalize the data
+```{r}
+seurat_object <- NormalizeData(seurat_object, normalization.method = "LogNormalize")
+seurat_object <- ScaleData(seurat_object, verbose = FALSE)
+```
+
+```{r}
+dim(seurat_object)
+```
+
+## Create table of cells that aren't viable from the dataset
+```{r}
+seurat_object$discard <- (seurat_object$nCount_RNA < 1000 | seurat_object$nFeature_RNA < 750)
+```
+
+```{r}
+head(seurat_object@meta.data[["discard"]])
+```
+
+## Remove those non-viable cells from the dataset
+```{r}
+# Create a logical vector to identify cells to discard
+cells_to_discard <- seurat_object$discard
+
+# Subset cells based on the logical vector, keeping all genes
+seurat_object <- seurat_object[, !cells_to_discard]
+dim(seurat_object)
+
+genes_to_keep <- (rowSums(seurat_object[["RNA"]]$counts) > 0)
+seurat_object <- seurat_object[genes_to_keep,]
+dim(seurat_object)
+```
+
+```{r}
+dim(seurat_object[["RNA"]]$scale.data)
+```
+
+## Seurat object identification of variable genes
+
+```{r}
+seurat_object <- FindVariableFeatures(seurat_object, selection.method = "vst", nfeatures = 2000)
+top_10_genes <- head(VariableFeatures(seurat_object), 10)
+```
+
+```{r}
+vf_plot <- VariableFeaturePlot(seurat_object)
+LabelPoints(plot = vf_plot, points = top_10_genes, repel = TRUE, xnudge = 0, ynudge = 0)
+```
+
+## Run a Principal Components Analysis with the Seurat RunPCA function
+
+```{r}
+seurat_object <- RunPCA(seurat_object, verbose = FALSE)
+```
+
+## Use for PCA of just variable features
+```{r}
+#seurat_object <- RunPCA(seurat_object, features = VariableFeatures(object = seurat_object))
+```
+
+## Visualize the PCA information
+```{r}
+seurat_object[["pca"]]@cell.embeddings[1:6, 1:20]
+```
+
+```{r}
+VizDimLoadings(seurat_object, dims = 1:5, nfeatures = 5, reduction = "pca")
+```
+
+```{r}
+DimPlot(seurat_object, label.size = 4, repel = TRUE, label = TRUE, reduction = "pca")
+```
+
+```{r}
+ElbowPlot(seurat_object, ndims = 50)
+```
+
+## UMAP reduction after PCA with Seurat RunUMAP
+
+```{r}
+seurat_object <- FindNeighbors(seurat_object, dims = 1:20)
+seurat_object <- FindClusters(seurat_object, resolution = 0.8)
+```
+
+```{r}
+seurat_object <- RunUMAP(seurat_object, dims = 1:50, metric = "cosine", n_neighbors = 50L, repulsion.strength = 1)
+```
+
+```{r}
+DimPlot(seurat_object, label.size = 4, repel = TRUE, label = FALSE, reduction = "umap", group.by = "TissueType")
+```
+
+```{r}
+umap_plot <- DimPlot(seurat_object, label.size = 4, repel = TRUE, label = TRUE, reduction = "umap")
+print(umap_plot)
+```
+
+
+## Finding all the cells in a cluster
+```{r}
+# 
+cluster_name <- "8"
+
+# Extract cell names belonging to the specified cluster
+cells_in_cluster <- WhichCells(seurat_object, ident = cluster_name)
+
+# Print the cell names
+print(cells_in_cluster)
+
+# Turn cells in cluster information to a DF
+cells_in_cluster <- data.frame(cells_in_cluster = cells_in_cluster)
+```
+
+```
+{r}
+# Write the modified data frame to a CSV file with headers
+write.csv(cells_in_cluster, file = "R_Similarity.csv", row.names = FALSE)
+```
+
+
+## Run SCType for cell type identification
+
+```{r}
+# load gene set preparation function
+source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/gene_sets_prepare.R")
+# load cell type annotation function
+source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sctype_score_.R")
+
+```
+
+```{r}
+# DB file
+db_ <- "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx";
+tissue <- "Immune system" # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adrenal,Heart,Intestine,Muscle,Placenta,Spleen,Stomach,Thymus 
+
+# prepare gene sets
+gs_list <- gene_sets_prepare(db_, tissue)
+```
+
+```{r}
+# get cell-type by cell matrix
+es.max = sctype_score(scRNAseqData = seurat_object[["RNA"]]$scale.data, scaled = TRUE, 
+                      gs = gs_list$gs_positive, gs2 = gs_list$gs_negative) 
+
+# NOTE: scRNAseqData parameter should correspond to your input scRNA-seq matrix. 
+# In case Seurat is used, it is either pbmc[["RNA"]]@scale.data (default), pbmc[["SCT"]]@scale.data, in case sctransform is used for normalization,
+# or pbmc[["integrated"]]@scale.data, in case a joint analysis of multiple single-cell datasets is performed.
+
+# merge by cluster
+cL_resutls = do.call("rbind", lapply(unique(seurat_object@meta.data$seurat_clusters), function(cl){
+    es.max.cl = sort(rowSums(es.max[ ,rownames(seurat_object@meta.data[seurat_object@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
+    head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(seurat_object@meta.data$seurat_clusters==cl)), 10)
+}))
+sctype_scores = cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
+
+# set low-confident (low ScType score) clusters to "unknown"
+sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_scores$ncells/4] = "Unknown"
+print(sctype_scores[,1:3])
+```
+
+## Show plot with cell types attached
+
+```{r}
+seurat_object@meta.data$customclassif = ""
+for(j in unique(sctype_scores$cluster)){
+  cl_type = sctype_scores[sctype_scores$cluster==j,]; 
+  seurat_object@meta.data$customclassif[seurat_object@meta.data$seurat_clusters == j] = as.character(cl_type$type[1])
+}
+
+DimPlot(seurat_object, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')        
+
+```
+
+```{r}
+dim(seurat_object@reductions[["pca"]]@cell.embeddings)
+head(seurat_object@reductions[["pca"]]@cell.embeddings)
+```
+
+
+## Create PCA df for more reliable comparison with scMilvus Python pipeline
+```{r}
+PCA_df <- seurat_object@reductions[["pca"]]@cell.embeddings
+print(PCA_df)
+PCA_df <- data.frame(PCA_df)
+print(PCA_df)
+```
+
+```{r}
+# Write the data frame to a CSV file
+write.csv(PCA_df, file = "PCA_df.csv", row.names = FALSE)
+```
+
+
+
+
