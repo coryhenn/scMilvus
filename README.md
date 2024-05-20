@@ -16,6 +16,22 @@ current challenges”. In: Cognitive Systems Research 85 (June 2024), p. 101216.
 doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
 101216.
 
+# Basic Functionality
+## R in R studio
+### Matrix_Builder_Normalized_CellClean.qmd
+- Create a Seurat object in R from a dataframe containing genes (m) and individual cells (n) from scRNAseq experiment
+- Scale and center the data to normalize gene expressions
+- Filter out non-viable cells based on gene counts/expression
+### scRNAseq_Analysis_Pipeline.qmd
+- Perform Principal Components Analysis (PCA) for dimensionality reduction, reataining the most significant components
+- Peform neraest neighbor and clustering to identify like cells from gene expression using distance metrics (i.e. Euclidean distance, cosine similarity)
+- Plot the 2-Dimensional UMAP for visualization
+- Extract cells from those clusters for comparison to Milvus vector similarity search
+- Use scType to predict the cell types in each cluster
+## Python
+### Analysis.py
+- 
+
 # Figures
 
 ## Elbow plot of PC significance
