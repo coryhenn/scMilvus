@@ -30,6 +30,7 @@ doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
 - Use scType to predict the cell types in each cluster
 ## Python
 ### Analysis.py
+- Identify clusters of similar cells starting from seed cell IDs and iteratively expands the search
 - 
 
 # Figures
