@@ -49,8 +49,8 @@ doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
                  i.e. cell id 0 will look like 100000, cell_id 1 = 100001,
                  cell_id 2 = 100002
 - query the Milvus database for vectors that have the highest cosine similarity to the root vector
-        
-
+### Global_Variables.py
+- Connect to the Milvus DB
 
 # Figures
 
