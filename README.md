@@ -15,3 +15,20 @@ Storage and Retrieval Technique, Challenge. Preprint. 2023. arXiv: 2310.11703 [c
 current challenges”. In: Cognitive Systems Research 85 (June 2024), p. 101216. issn: 1389-0417.
 doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
 101216.
+
+# Figures
+
+## Elbow plot of PC significance
+<img src="plots/Elbow.png" alt="Elbow plot of PCA contributions" width="400"/>  
+
+## Differential gene expression by PC
+<img src="plots/PCA_DE.png" alt="PCA Differential Gene Expression" width="400"/>
+
+## Scatter plot of most variably expressed genes across all cells
+<img src="plots/Variable_Genes.png" alt="Most Variable Genes Across Cells" width="400"/>
+
+## Cell clusters based on gene expression using Uniform Manifold Approximation (UMAP) in Seurat
+<img src="plots/UMAP_Brain.png" alt="UMAP Clusters from Brain scRNAseq" width="400"/>
+
+## Cell type prediciton for clusters using scType library
+<img src="plots/UMAP_Brain_CellType.png" alt="UMAP Clusters from Brain scRNAseq by Predictied Cell Type" width="400"/>
