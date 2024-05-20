@@ -32,6 +32,11 @@ doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
 ### Analysis.py
 - Identify clusters of similar cells starting from seed cell IDs and iteratively expands the search
 - Processes similarity data and saves the results to CSV files
+- Find the original gene data for each cell in the top-n similar cells
+-  Map the cell_ids to a cell_name from the respective experiment
+-   Return a dictionary with the keys [cell_id, cell_name, top_genes] were cell_id and cell_name are from the vectors in Milvus and p_genes is a list of the top_n genes expressed in each cell, ordered most to least expressed.
+        
+
 
 # Figures
 
