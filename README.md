@@ -37,19 +37,18 @@ doi: 10.1016/j.cogsys.2024.101216. url: http://dx.doi.org/10.1016/j.cogsys.2024.
 -   Return a dictionary with the keys [cell_id, cell_name, top_genes] were cell_id and cell_name are from the vectors in Milvus and p_genes is a list of the top_n genes expressed in each cell, ordered most to least expressed
 ### database_connections.py
 - read a cell/gene matrix and perform the following:
-        1. Read the data into memory
-        2. Normalize the data to have mean 0, standard deviation 1.
-        3. Fit a PCA that keeps 85% of the variance.
-        4. Pad the PCA vector with zeroes so it is 1000 elements long.
-        5. Send the PCA vector to Milvus along with the cell name, file name
-            the data came from, and cell id (i.e. the index into the list
-            of PCA vectors)
-        For the cell_id, use the following convention:
+  1. Read the data into memory
+  2. Normalize the data to have mean 0, standard deviation
+  3. Fit a PCA that keeps 85% of the variance
+  4. Pad the PCA vector with zeroes so it is 1000 elements long
+  5. Send the PCA vector to Milvus along with the cell name, file name the data came from, and cell id (i.e. the index into the list of PCA vectors)
+  6. For the cell_id, use the following convention:
             100000 where:
-                - The first digit is the experiment number
-                - The remaining 5 digits are reversed for cell_ids within the experiment.
+                1. The first digit is the experiment number
+                2. The remaining 5 digits are reversed for cell_ids within the experiment.
                  i.e. cell id 0 will look like 100000, cell_id 1 = 100001,
                  cell_id 2 = 100002
+- query the Milvus database for vectors that have the highest cosine similarity to the root vector
         
 
 
